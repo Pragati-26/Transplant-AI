@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: transplant-ai
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SECRET_KEY
+        value: mySuperSecretKey1234567890abcdef
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 60
+      - key: GROQ_API_KEY
+        value: your_groq_key_here
+      - key: GEMINI_API_KEY
+        value: ""
+      - key: ANTHROPIC_API_KEY
+        value: ""
+      - key: DATABASE_URL
+        value: sqlite:///./transplant.db
