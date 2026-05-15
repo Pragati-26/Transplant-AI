@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TransplantAI — Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-brand">🫀 TransplantAI</div>
+    <div class="nav-links">
+      <button onclick="showSection('match')"   id="nav-match"   class="nav-btn active">New Match</button>
+      <button onclick="showSection('history')" id="nav-history" class="nav-btn">History</button>
+      <button onclick="logout()" class="nav-btn logout">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Match Section -->
+  <main id="section-match" class="section">
+    <div class="section-header">
+      <h2>Donor — Patient Compatibility Analysis</h2>
+      <p>Enter donor and patient details to get an AI-powered match score</p>
+    </div>
+
+    <form onsubmit="handleMatch(event)" class="match-form">
+      <div class="form-grid">
+
+        <!-- Donor column -->
+        <div class="form-col">
+          <div class="col-header donor">Donor Details</div>
+          <div class="field">
+            <label>Age</label>
+            <input type="number" id="d-age" min="18" max="80" placeholder="18–80" required>
+          </div>
+          <div class="field">
+            <label>Weight (kg)</label>
+            <input type="number" id="d-weight" min="30" max="200" step="0.1" placeholder="kg" required>
+          </div>
+          <div class="field">
+            <label>Blood type</label>
+            <select id="d-blood">
+              <option value="A+">A+</option><option value="A-">A-</option>
+              <option value="B+">B+</option><option value="B-">B-</option>
+              <option value="AB+">AB+</option><option value="AB-">AB-</option>
+              <option value="O+">O+</option><option value="O-">O-</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Min acceptable age</label>
+            <input type="number" id="d-min-age" min="18" max="80" placeholder="e.g. 25" required>
+          </div>
+          <div class="field">
+            <label>Max acceptable age</label>
+            <input type="number" id="d-max-age" min="18" max="80" placeholder="e.g. 55" required>
+          </div>
+          <div class="field">
+            <label>Min acceptable weight (kg)</label>
+            <input type="number" id="d-min-wt" min="30" max="200" placeholder="e.g. 55" required>
+          </div>
+          <div class="field">
+            <label>Max acceptable weight (kg)</label>
+            <input type="number" id="d-max-wt" min="30" max="200" placeholder="e.g. 95" required>
+          </div>
+        </div>
+
+        <!-- Patient column -->
+        <div class="form-col">
+          <div class="col-header patient">Patient Details</div>
+          <div class="field">
+            <label>Age</label>
+            <input type="number" id="p-age" min="18" max="100" placeholder="18–100" required>
+          </div>
+          <div class="field">
+            <label>Weight (kg)</label>
+            <input type="number" id="p-weight" min="30" max="200" step="0.1" placeholder="kg" required>
+          </div>
+          <div class="field">
+            <label>BMI</label>
+            <input type="number" id="p-bmi" min="10" max="60" step="0.1" placeholder="e.g. 24.5" required>
+          </div>
+          <div class="field">
+            <label>Blood type</label>
+            <select id="p-blood">
+              <option value="A+">A+</option><option value="A-">A-</option>
+              <option value="B+">B+</option><option value="B-">B-</option>
+              <option value="AB+">AB+</option><option value="AB-">AB-</option>
+              <option value="O+">O+</option><option value="O-">O-</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Organ health score (0–10)</label>
+            <input type="number" id="p-health" min="0" max="10" step="0.1" placeholder="0–10" required>
+          </div>
+          <div class="field">
+            <label>Biological markers (0–10)</label>
+            <input type="number" id="p-bio" min="0" max="10" step="0.1" placeholder="0–10" required>
+          </div>
+          <div class="field">
+            <label>Predicted survival chance (%)</label>
+            <input type="number" id="p-survival" min="0" max="100" step="0.1" placeholder="0–100" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="error-box" id="match-error"></div>
+      <button type="submit" class="btn-primary btn-large" id="match-btn">
+        Analyze Compatibility
+      </button>
+    </form>
+
+    <!-- Result card -->
+    <div class="result-card" id="result-card" style="display:none">
+      <div class="result-header">
+        <div class="result-score-wrap">
+          <span class="result-label">Compatibility Score</span>
+          <span class="result-score" id="result-score"></span>
+        </div>
+        <span class="result-badge" id="result-badge"></span>
+      </div>
+      <div class="result-explanation" id="result-explanation"></div>
+      <div class="result-meta" id="result-meta"></div>
+    </div>
+  </main>
+
+  <!-- History Section -->
+  <main id="section-history" class="section" style="display:none">
+    <div class="section-header">
+      <h2>Match History</h2>
+      <p>All your previous compatibility analyses</p>
+    </div>
+    <div id="history-list"></div>
+  </main>
+
+  <script>
+    const API   = 'http://localhost:8000';
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/index.html';
+
+    function authHeaders() {
+      return {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/index.html';
+    }
+
+    function showSection(name) {
+      document.getElementById('section-match').style.display   = name === 'match'   ? 'block' : 'none';
+      document.getElementById('section-history').style.display = name === 'history' ? 'block' : 'none';
+      document.getElementById('nav-match').classList.toggle('active',   name === 'match');
+      document.getElementById('nav-history').classList.toggle('active', name === 'history');
+      if (name === 'history') loadHistory();
+    }
+
+    function scoreColor(s) {
+      if (s >= 0.75) return '#1D9E75';
+      if (s >= 0.55) return '#E6A817';
+      if (s >= 0.35) return '#E8761A';
+      return '#E24B4A';
+    }
+
+    function badgeClass(rec) {
+      const map = { Excellent: 'badge-excellent', Good: 'badge-good',
+                    Moderate: 'badge-moderate', Poor: 'badge-poor' };
+      return map[rec] || 'badge-good';
+    }
+
+    async function handleMatch(e) {
+      e.preventDefault();
+      document.getElementById('match-error').textContent = '';
+      document.getElementById('result-card').style.display = 'none';
+
+      const btn = document.getElementById('match-btn');
+      btn.disabled    = true;
+      btn.textContent = 'Analyzing...';
+
+      const body = {
+        patient_age:        +document.getElementById('p-age').value,
+        patient_weight:     +document.getElementById('p-weight').value,
+        patient_bmi:        +document.getElementById('p-bmi').value,
+        patient_blood_type:  document.getElementById('p-blood').value,
+        donor_age:          +document.getElementById('d-age').value,
+        donor_weight:       +document.getElementById('d-weight').value,
+        donor_blood_type:    document.getElementById('d-blood').value,
+        donor_min_age:      +document.getElementById('d-min-age').value,
+        donor_max_age:      +document.getElementById('d-max-age').value,
+        donor_min_weight:   +document.getElementById('d-min-wt').value,
+        donor_max_weight:   +document.getElementById('d-max-wt').value,
+        health_score:       +document.getElementById('p-health').value,
+        biological_markers: +document.getElementById('p-bio').value,
+        survival_chance:    +document.getElementById('p-survival').value,
+      };
+
+      try {
+        const res  = await fetch(`${API}/match/`, {
+          method:  'POST',
+          headers: authHeaders(),
+          body:    JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Match failed');
+
+        const pct = (data.compatibility_score * 100).toFixed(1);
+
+        const scoreEl = document.getElementById('result-score');
+        scoreEl.textContent = `${pct}%`;
+        scoreEl.style.color = scoreColor(data.compatibility_score);
+
+        const badge = document.getElementById('result-badge');
+        badge.textContent = data.recommendation;
+        badge.className   = `result-badge ${badgeClass(data.recommendation)}`;
+
+        document.getElementById('result-explanation').textContent = data.explanation;
+        document.getElementById('result-meta').textContent =
+          `Analysis saved · ${new Date(data.created_at).toLocaleString()}`;
+
+        document.getElementById('result-card').style.display = 'block';
+        document.getElementById('result-card').scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        const el = document.getElementById('match-error');
+        el.textContent   = err.message;
+        el.style.display = 'block';
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Analyze Compatibility';
+      }
+    }
+
+    async function loadHistory() {
+      const list = document.getElementById('history-list');
+      list.innerHTML = '<p class="loading">Loading history...</p>';
+
+      try {
+        const res  = await fetch(`${API}/history/`, { headers: authHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+
+        if (!data.length) {
+          list.innerHTML = '<p class="empty">No matches yet. Run your first analysis!</p>';
+          return;
+        }
+
+        list.innerHTML = data.map(r => `
+          <div class="history-item">
+            <div class="history-left">
+              <span class="history-date">${new Date(r.created_at).toLocaleDateString()}</span>
+              <span class="history-pair">
+                Donor ${r.donor_age}y ${r.donor_blood_type}
+                → Patient ${r.patient_age}y ${r.patient_blood_type}
+              </span>
+            </div>
+            <div class="history-right">
+              <span class="history-score" style="color:${scoreColor(r.compatibility_score)}">
+                ${(r.compatibility_score * 100).toFixed(1)}%
+              </span>
+              <span class="result-badge ${badgeClass(r.recommendation)}">${r.recommendation}</span>
+              <button class="delete-btn" onclick="deleteMatch(${r.id})">✕</button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        list.innerHTML = `<p class="error-text">${err.message}</p>`;
+      }
+    }
+
+    async function deleteMatch(id) {
+      if (!confirm('Delete this record?')) return;
+      try {
+        await fetch(`${API}/history/${id}`, { method: 'DELETE', headers: authHeaders() });
+        loadHistory();
+      } catch (err) {
+        alert('Delete failed: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

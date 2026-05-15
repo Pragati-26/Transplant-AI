@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TransplantAI — Login</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="logo-icon">🫀</div>
+        <h1>TransplantAI</h1>
+        <p>AI-powered kidney donor-patient matching</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('login')">Login</button>
+        <button class="tab" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- Login -->
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" id="login-username" placeholder="Enter username" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="Enter password" required>
+        </div>
+        <div class="error-box" id="login-error"></div>
+        <button type="submit" class="btn-primary" id="login-btn">Login</button>
+      </form>
+
+      <!-- Register -->
+      <form id="register-form" style="display:none" onsubmit="handleRegister(event)">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="reg-email" placeholder="Enter email" required>
+        </div>
+        <div class="field">
+          <label>Username</label>
+          <input type="text" id="reg-username" placeholder="Min 3 characters" required minlength="3">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="reg-password" placeholder="Min 8 characters" required minlength="8">
+        </div>
+        <div class="error-box" id="reg-error"></div>
+        <button type="submit" class="btn-primary" id="reg-btn">Create account</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8000';
+
+    if (localStorage.getItem('token')) {
+      window.location.href = '/dashboard.html';
+    }
+
+    function switchTab(tab) {
+      document.getElementById('login-form').style.display    = tab === 'login'    ? 'flex' : 'none';
+      document.getElementById('register-form').style.display = tab === 'register' ? 'flex' : 'none';
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', (tab === 'login') ? i === 0 : i === 1);
+      });
+      clearErrors();
+    }
+
+    function clearErrors() {
+      document.getElementById('login-error').textContent = '';
+      document.getElementById('reg-error').textContent   = '';
+    }
+
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function setLoading(btnId, loading, label) {
+      const btn = document.getElementById(btnId);
+      btn.disabled    = loading;
+      btn.textContent = loading ? 'Please wait...' : label;
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      clearErrors();
+      setLoading('login-btn', true, 'Login');
+
+      const form = new URLSearchParams({
+        username: document.getElementById('login-username').value,
+        password: document.getElementById('login-password').value
+      });
+
+      try {
+        const res  = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: form
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Login failed');
+        localStorage.setItem('token', data.access_token);
+        window.location.href = '/dashboard.html';
+      } catch (err) {
+        showError('login-error', err.message);
+      } finally {
+        setLoading('login-btn', false, 'Login');
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      clearErrors();
+      setLoading('reg-btn', true, 'Create account');
+
+      try {
+        const res  = await fetch(`${API}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email:    document.getElementById('reg-email').value,
+            username: document.getElementById('reg-username').value,
+            password: document.getElementById('reg-password').value
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Registration failed');
+
+        const el = document.getElementById('reg-error');
+        el.textContent   = 'Account created! Please login.';
+        el.style.color   = '#1D9E75';
+        el.style.display = 'block';
+        setTimeout(() => switchTab('login'), 1500);
+      } catch (err) {
+        showError('reg-error', err.message);
+      } finally {
+        setLoading('reg-btn', false, 'Create account');
+      }
+    }
+  </script>
+</body>
+</html>

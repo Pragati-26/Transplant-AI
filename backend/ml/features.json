@@ -1,0 +1,20 @@
+[
+  "Patient_Age",
+  "Patient_Weight",
+  "Patient_BMI",
+  "Donor_Age",
+  "Donor_Weight",
+  "Donor_Min_Age",
+  "Donor_Max_Age",
+  "Donor_Min_Weight",
+  "Donor_Max_Weight",
+  "abo_compatible",
+  "blood_exact_match",
+  "age_gap",
+  "weight_gap",
+  "donor_age_in_range",
+  "donor_weight_in_range",
+  "RealTime_Organ_HealthScore",
+  "Biological_Markers",
+  "Predicted_Survival_Chance"
+]
