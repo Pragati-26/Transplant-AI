@@ -172,10 +172,6 @@ Ensure these are set in your deployment environment:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Support
-
-For support, email support@transplantsai.com or open an issue in the repository.
-
 ## Acknowledgments
 
 - FastAPI framework for building robust APIs
